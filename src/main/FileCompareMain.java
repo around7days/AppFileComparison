@@ -9,8 +9,8 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import common.manager.MyPropertyManager;
+import common.utils.MyFileSearch;
 import common.utils.MyFileUtil;
-import common.utils.MyFileVisitor;
 
 /**
  * ファイル比較メインクラス
@@ -96,17 +96,17 @@ public class FileCompareMain {
         String[] excludePatterns = prop.getValue("excludePatterns").split(";"); // 除外パターン
 
         boolean checkLastTime = Boolean.getBoolean(prop.getValue("checkLastModifiedTime")); // 最終更新日付チェック
-        boolean checkSha256 = Boolean.valueOf(prop.getValue("checkSha256")); // チェックサム
+        boolean checkHash = Boolean.valueOf(prop.getValue("checkHash")); // チェックサム
 
         /*
          * ファイル探索
          */
         // ファイル探索クラスの生成
-        MyFileVisitor fileVisitor = new MyFileVisitor();
+        MyFileSearch fileSearch = new MyFileSearch();
 
         // ディレクトリ1、ディレクトリ2のファイルリストの取得（相対パス）
-        List<String> fileList1 = fileVisitor.walk(compareDir1, syntaxType, includePatterns, excludePatterns);
-        List<String> fileList2 = fileVisitor.walk(compareDir2, syntaxType, includePatterns, excludePatterns);
+        List<String> fileList1 = fileSearch.search(compareDir1, syntaxType, includePatterns, excludePatterns);
+        List<String> fileList2 = fileSearch.search(compareDir2, syntaxType, includePatterns, excludePatterns);
 
         // 新規・更新リストの取得
         for (String file1 : fileList1) {
@@ -126,7 +126,7 @@ public class FileCompareMain {
                 }
 
                 // チェックサムの比較
-                if (checkSha256) {
+                if (checkHash) {
                     if (!MyFileUtil.equalsChecksum(filePath1, filePath2)) {
                         // 異なる場合は更新リストに格納
                         updateList.add(file1);

@@ -16,10 +16,10 @@ import org.apache.log4j.Logger;
  * ファイル探索クラス<br>
  * @author 7days
  */
-public class MyFileVisitor {
+public class MyFileSearch {
 
     /** Logger */
-    private static final Logger logger = Logger.getLogger(MyFileVisitor.class);
+    private static final Logger logger = Logger.getLogger(MyFileSearch.class);
 
     /** FileSystem */
     private static final FileSystem fs = FileSystems.getDefault();
@@ -32,7 +32,7 @@ public class MyFileVisitor {
      * @param excludePatterns 除外対象パターン
      * @return 結果リスト
      */
-    public List<String> walk(Path searchPath,
+    public List<String> search(Path searchPath,
                              String syntax,
                              String[] includePatterns,
                              String[] excludePatterns) {
@@ -54,10 +54,10 @@ public class MyFileVisitor {
                   .filter(p -> includeMatchPath(p, includePathMatcherList))  // 比較対象に含まれるか
                   .filter(p -> !excludeMatchPath(p, excludePathMatcherList)) // 除外対象に含まれないか
                   .forEach(p -> {
-            //@formatter:on
                       // 相対パスを格納
                       resultList.add(searchPath.relativize(p).toString());
                   });
+            //@formatter:on
         } catch (IOException e) {
             logger.warn("file search error", e);
             return null;
@@ -83,7 +83,7 @@ public class MyFileVisitor {
         List<PathMatcher> includePathMatcherList = new ArrayList<>();
 
         for (String pattern : patterns) {
-            // 構文とパターンの生成
+            // 構文とパターンの生成(パスを/に変換)
             String syntaxAndPattern = syntax + ":" + (searchPath.toString() + "/" + pattern).replaceAll("\\\\", "/");
             // PathMatcherの生成
             PathMatcher matcher = fs.getPathMatcher(syntaxAndPattern);
@@ -132,15 +132,12 @@ public class MyFileVisitor {
     private boolean matchPath(Path p,
                               List<PathMatcher> pathMatcherList) {
         boolean b = false;
-
         for (PathMatcher matcher : pathMatcherList) {
             if (matcher.matches(p)) {
-                // 一致
-                b = true;
+                b = true;// 一致
                 break;
             }
         }
-
         return b;
     }
 
