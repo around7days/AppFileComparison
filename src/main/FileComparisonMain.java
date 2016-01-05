@@ -16,10 +16,10 @@ import common.utils.MyFileUtil;
  * ファイル比較メインクラス
  * @author 7days
  */
-public class FileCompareMain {
+public class FileComparisonMain {
 
     /** Logger */
-    private static final Logger logger = Logger.getLogger(FileCompareMain.class);
+    private static final Logger logger = Logger.getLogger(FileComparisonMain.class);
 
     /** PropertyManager */
     private static final MyPropertyManager prop = MyPropertyManager.INSTANCE;
@@ -41,7 +41,7 @@ public class FileCompareMain {
         logger.debug("--------FileCompare Start");
 
         try {
-            new FileCompareMain().execute();
+            new FileComparisonMain().execute();
         } catch (Exception e) {
             logger.error("system error", e);
         }
@@ -67,12 +67,13 @@ public class FileCompareMain {
 
     /**
      * 設定ファイルの読み込み
+     * @throws IOException
      */
-    private void procReadProperty() {
+    private void procReadProperty() throws IOException {
         logger.debug("----procReadProperty");
 
         // 設定ファイルパスの生成
-        Path confPath = Paths.get(FileCompareConst.CONF_DIR, FileCompareConst.CONF_NM);
+        Path confPath = Paths.get(FileComparisonConst.CONF_DIR, FileComparisonConst.CONF_NM);
 
         // 設定ファイルの読み込み
         prop.setProperty(confPath.toString());
@@ -110,41 +111,37 @@ public class FileCompareMain {
 
         // 新規・更新リストの取得
         for (String file1 : fileList1) {
-            if (fileList2.contains(file1)) {
-                // 比較先に同名ファイルが存在する
+            if (!fileList2.contains(file1)) {
+                // 比較先に同名ファイルが存在しない場合
+                // 新規リストに格納
+                insertList.add(file1);
+                continue;
+            } else {
+                // 比較先に同名ファイルが存在する場合
 
                 Path filePath1 = compareDir1.resolve(file1);// 比較元
                 Path filePath2 = compareDir2.resolve(file1);// 比較先
 
                 // 更新日付の比較
-                if (checkLastTime) {
-                    if (!MyFileUtil.equalsLastModifiedTime(filePath1, filePath2)) {
-                        // 異なる場合は更新リストに格納
-                        updateList.add(file1);
-                        continue;
-                    }
+                if (checkLastTime && !MyFileUtil.equalsLastModifiedTime(filePath1, filePath2)) {
+                    // 異なる場合は更新リストに格納
+                    updateList.add(file1);
+                    continue;
                 }
 
                 // チェックサムの比較
-                if (checkHash) {
-                    if (!MyFileUtil.equalsChecksum(filePath1, filePath2)) {
-                        // 異なる場合は更新リストに格納
-                        updateList.add(file1);
-                        continue;
-                    }
+                if (checkHash && !MyFileUtil.equalsChecksum(filePath1, filePath2)) {
+                    // 異なる場合は更新リストに格納
+                    updateList.add(file1);
+                    continue;
                 }
-
-            } else {
-                // 比較先に同名ファイルが存在しない
-                // 新規リストに格納
-                insertList.add(file1);
             }
         }
 
         // 削除リストの取得
         for (String file2 : fileList2) {
             if (!fileList1.contains(file2)) {
-                // 比較元に同名ファイルが存在しない
+                // 比較元に同名ファイルが存在しない場合
                 // 削除リストに格納
                 deleteList.add(file2);
             }

@@ -31,11 +31,12 @@ public class MyFileSearch {
      * @param includePatterns 比較対象パターン
      * @param excludePatterns 除外対象パターン
      * @return 結果リスト
+     * @throws IOException
      */
     public List<String> search(Path searchPath,
                              String syntax,
                              String[] includePatterns,
-                             String[] excludePatterns) {
+                             String[] excludePatterns) throws IOException {
         // 検索結果の格納List
         List<String> resultList = new ArrayList<String>();
 
@@ -59,8 +60,8 @@ public class MyFileSearch {
                   });
             //@formatter:on
         } catch (IOException e) {
-            logger.warn("file search error", e);
-            return null;
+            logger.error("file search error");
+            throw e;
         }
 
         // 結果出力（デバッグ）
@@ -84,7 +85,7 @@ public class MyFileSearch {
 
         for (String pattern : patterns) {
             // 構文とパターンの生成(パスを/に変換)
-            String syntaxAndPattern = syntax + ":" + (searchPath.toString() + "/" + pattern).replaceAll("\\\\", "/");
+            String syntaxAndPattern = syntax + ":" + (searchPath + "/" + pattern.trim()).replaceAll("\\\\", "/");
             // PathMatcherの生成
             PathMatcher matcher = fs.getPathMatcher(syntaxAndPattern);
             // リストに格納
