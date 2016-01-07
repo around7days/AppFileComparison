@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: . ./lib/log4j-1.2.17.jar ./lib/commons-codec-1.10.jar 
+Main-Class: main.FileComparisonMain
+

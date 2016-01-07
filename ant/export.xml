@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="FileComparison" default="export" basedir=".">
+
+	<target name="export">
+
+		<!-- 環境変数設定 -->
+		<property name="file_name" value="sync.jar"/>
+		<property name="dest_dir" value="./dest"/>
+
+		<!-- 出力先ディレクトリを削除 -->
+		<delete dir="${dest_dir}" />
+		<mkdir dir="${dest_dir}" />
+
+		<!-- 出力先ディレクトリにzipファイル作成 -->
+		<zip destfile="${dest_dir}/${file_name}">
+			<fileset dir="../classes" />
+			<fileset dir=".." >
+				<include name="META-INF/**" />
+			</fileset>
+		</zip>
+
+		<!-- 出力先ディレクトリにファイルをコピー -->
+		<copy todir="${dest_dir}">
+			<fileset dir=".." >
+				<include name="conf/**" />
+				<include name="lib/**" />
+			</fileset>
+		</copy>
+
+	</target>
+
+</project>
