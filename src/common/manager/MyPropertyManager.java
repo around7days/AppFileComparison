@@ -44,4 +44,16 @@ public enum MyPropertyManager {
     public String getValue(String key) {
         return prop.getProperty(key);
     }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        prop.stringPropertyNames().forEach(key -> {
+            sb.append(String.format("%-25s", key))
+              .append(" : ")
+              .append(prop.getProperty(key))
+              .append(System.lineSeparator());
+        });
+        return sb.toString();
+    }
+
 }

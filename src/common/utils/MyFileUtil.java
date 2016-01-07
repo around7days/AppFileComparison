@@ -1,13 +1,13 @@
 package common.utils;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -67,31 +67,17 @@ public class MyFileUtil {
      * @param list 出力内容
      * @param outputPath 出力先パス
      * @param appendFlg 出力設定[true:追記 false:上書]
-     * @return 結果 true:成功 false:失敗
-     */
-    public static boolean fileOutput(List<Object> list,
-                                     String outputPath,
-                                     boolean appendFlg) {
-        return fileOutput(list, outputPath, appendFlg, EncodeType.DEFAULT.getCharset(), LineFeedType.DEFAULT.getValue());
-    }
-
-    /**
-     * ファイルの出力処理
-     * @param list 出力内容
-     * @param outputPath 出力先パス
-     * @param appendFlg 出力設定[true:追記 false:上書]
      * @param encode 文字コード
      * @param lineFeed 改行コード
-     * @return 結果 true:成功 false:失敗
+     * @throws IOException
      */
-    public static boolean fileOutput(List<Object> list,
-                                     String outputPath,
-                                     boolean appendFlg,
-                                     Charset encode,
-                                     String lineFeed) {
+    public static void fileOutput(List<?> list,
+                                  Path outputPath,
+                                  boolean appendFlg,
+                                  Charset encode,
+                                  String lineFeed) throws IOException {
         // 出力先フォルダの生成
-        File outputFile = new File(outputPath);
-        outputFile.getParentFile().mkdirs();
+        outputPath.toFile().getParentFile().mkdirs();
 
         // 出力オプションの設定
         List<OpenOption> options = new ArrayList<OpenOption>();
@@ -106,7 +92,7 @@ public class MyFileUtil {
         }
 
         // 出力
-        try (BufferedWriter bw = Files.newBufferedWriter(outputFile.toPath(),
+        try (BufferedWriter bw = Files.newBufferedWriter(outputPath,
                                                          encode,
                                                          options.toArray(new OpenOption[options.size()]))) {
             for (Object line : list) {
@@ -114,10 +100,30 @@ public class MyFileUtil {
                 bw.write(lineFeed);
             }
         } catch (IOException e) {
-            logger.error("file output error", e);
-            return false;
+            logger.warn("file output error", e);
+            throw e;
         }
-        return true;
+    }
+
+    /**
+     * ファイルのコピー処理
+     * @param copyFrom コピー元ファイルパス
+     * @param copyTo コピー先ファイルパス
+     * @throws IOException
+     */
+    public static void fileCopy(Path copyFrom,
+                                Path copyTo) throws IOException {
+
+        // 出力先フォルダの生成
+        copyTo.toFile().getParentFile().mkdirs();
+
+        try {
+            // ファイルコピー（上書き、属性コピー）
+            Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        } catch (IOException e) {
+            logger.warn("file copy error", e);
+            throw e;
+        }
     }
 
     /**

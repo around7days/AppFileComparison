@@ -34,18 +34,18 @@ public class MyFileSearch {
      * @throws IOException
      */
     public List<String> search(Path searchPath,
-                             String syntax,
-                             String[] includePatterns,
-                             String[] excludePatterns) throws IOException {
+                               String syntax,
+                               String[] includePatterns,
+                               String[] excludePatterns) throws IOException {
         // 検索結果の格納List
         List<String> resultList = new ArrayList<String>();
 
         // 比較対象PathMatcherの生成
-        logger.debug("[inculdePattern]");
+        logger.debug("▲inculdePattern");
         List<PathMatcher> includePathMatcherList = createPathMatcher(searchPath, syntax, includePatterns);
 
         // 除外対象PathMatcherの生成
-        logger.debug("[excludePattern]");
+        logger.debug("▲excludePattern");
         List<PathMatcher> excludePathMatcherList = createPathMatcher(searchPath, syntax, excludePatterns);
 
         // 検索処理
@@ -65,7 +65,7 @@ public class MyFileSearch {
         }
 
         // 結果出力（デバッグ）
-        logger.debug("[resultList]");
+        logger.debug("▲matchList");
         resultList.forEach(s -> logger.debug(s));
 
         return resultList;

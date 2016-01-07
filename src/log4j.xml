@@ -13,30 +13,16 @@
 	<!-- Appender -->
 	<appender name="file" class="org.apache.log4j.FileAppender">
 		<param name="Encoding" value="UTF-8" />
-		<param name="File" value="./log/FileCompare.log" />
-		<param name="Append" value="false" /> <!-- true:追記  false:上書き -->
+		<param name="File" value="./log/FileComparison.log" />
+		<param name="Append" value="true" /> <!-- true:追記  false:上書き -->
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d{yyyy/MM/dd HH:mm:ss,SSS} %-5p (%C) %m%n" />
 		</layout>
 	</appender>
-
-	<!-- Appender_daily -->
-	<!--
-	<appender name="daily" class="org.apache.log4j.DailyRollingFileAppender">
-		<param name="Encoding" value="UTF-8" />
-		<param name="File" value="./log/SearchDatabase.log" />
-		<param name="Append" value="true"/>
-		<param name="datePattern" value="'.'yyyy-MM-dd"/>
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%d{yyyy/MM/dd HH:mm:ss,SSS} %-5p (%C) %m%n" />
-		</layout>
-	</appender>
-	-->
-
 
 	<!-- Log Level -->
 	<root>
-		<level value="DEBUG" />
+		<level value="INFO" />
 		<appender-ref ref="stdout" />
 		<appender-ref ref="file"/>
 	<!--
