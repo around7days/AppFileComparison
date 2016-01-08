@@ -7,24 +7,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-import main.FileComparisonConst.CompareKbn;
+import main.FileSyncConst.CompareKbn;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import common.manager.MyPropertyManager;
+import common.utils.MyArrayUtil;
 import common.utils.MyFileSearch;
 import common.utils.MyFileUtil;
 
 /**
- * ファイル比較メインクラス
+ * ファイル同期化メインクラス
  * @author 7days
  */
-public class FileComparisonMain {
+public class FileSyncMain {
 
     /** Logger */
-    private static final Logger logger = Logger.getLogger(FileComparisonMain.class);
+    private static final Logger logger = Logger.getLogger(FileSyncMain.class);
 
     /** PropertyManager */
     private static final MyPropertyManager prop = MyPropertyManager.INSTANCE;
@@ -41,7 +42,7 @@ public class FileComparisonMain {
         logger.info("★★★★★ 処理開始 ★★★★★");
 
         try {
-            new FileComparisonMain().execute();
+            new FileSyncMain().execute();
         } catch (Exception e) {
             logger.error("system error", e);
         }
@@ -61,8 +62,8 @@ public class FileComparisonMain {
         // 比較処理
         procCompare();
 
-        // 結果出力処理
-        procOutput();
+        // 比較結果処理
+        procExecute();
     }
 
     /**
@@ -72,7 +73,7 @@ public class FileComparisonMain {
     private void procInit() throws IOException {
 
         // 設定ファイルの読み込み
-        prop.setProperty(FileComparisonConst.CONF_PATH.toString());
+        prop.setProperty(FileSyncConst.CONF_PATH.toString());
 
         // ログレベルの設定
         String logLevel = prop.getValue("logLevel");
@@ -94,9 +95,10 @@ public class FileComparisonMain {
         Path compareDir1 = Paths.get(prop.getValue("compareDir1")); // 比較元フォルダ
         Path compareDir2 = Paths.get(prop.getValue("compareDir2")); // 比較先フォルダ
 
-        String syntaxType = prop.getValue("syntaxType"); // 構文タイプ
         String[] includePatterns = prop.getValue("includePatterns").split(";"); // 比較パターン
         String[] excludePatterns = prop.getValue("excludePatterns").split(";"); // 除外パターン
+        String[] excludePatternsDefault = prop.getValue("excludePatternsDefault").split(";"); // 除外パターン（デフォルト）
+        excludePatterns = MyArrayUtil.joinArray(excludePatterns, excludePatternsDefault); // 除外パターンの結合
 
         boolean lastModifiedTimeCheck = Boolean.valueOf(prop.getValue("lastModifiedTimeCheck")); // 最終更新日付チェック
         boolean hashCheck = Boolean.valueOf(prop.getValue("hashCheck")); // チェックサム
@@ -113,9 +115,15 @@ public class FileComparisonMain {
 
         // ディレクトリ1、ディレクトリ2のファイルリストの取得（相対パス）
         logger.info("◆ファイル探索（比較元）");
-        List<String> fileList1 = fileSearch.search(compareDir1, syntaxType, includePatterns, excludePatterns);
+        List<String> fileList1 = fileSearch.search(compareDir1,
+                                                   FileSyncConst.SYNTAX_TYPE,
+                                                   includePatterns,
+                                                   excludePatterns);
         logger.info("◆ファイル探索（比較先）");
-        List<String> fileList2 = fileSearch.search(compareDir2, syntaxType, includePatterns, excludePatterns);
+        List<String> fileList2 = fileSearch.search(compareDir2,
+                                                   FileSyncConst.SYNTAX_TYPE,
+                                                   includePatterns,
+                                                   excludePatterns);
 
         /*
          * ファイル比較
@@ -163,10 +171,10 @@ public class FileComparisonMain {
     }
 
     /**
-     * 結果出力
+     * 比較結果処理
      * @throws IOException
      */
-    private void procOutput() throws IOException {
+    private void procExecute() throws IOException {
 
         /*
          * 設定ファイルから値を取得
@@ -177,10 +185,12 @@ public class FileComparisonMain {
 
         // 差分リストの出力
         if (isOutputDiffList) {
-            logger.info("◆差分リストの出力先　　：" + FileComparisonConst.OUTPUT_LIST_PATH);
+            logger.info("◆差分リストの出力先　　：" + FileSyncConst.OUTPUT_LIST_PATH);
+
+            // 出力用フォーマットの作成
             List<String> formatList = new ArrayList<>();
             for (DiffBean diffBean : diffListBean.getDiffList()) {
-                StringJoiner sj = new StringJoiner(FileComparisonConst.SEPARATOR);
+                StringJoiner sj = new StringJoiner(FileSyncConst.SEPARATOR); // 区切り文字の指定
                 sj.add(diffBean.getCompareKbn().value()); // 比較結果区分
                 sj.add(diffBean.getFilePath());// 相対パス
                 sj.add(Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath()).toString()); // 比較元絶対パス
@@ -188,8 +198,9 @@ public class FileComparisonMain {
                 formatList.add(sj.toString());
             }
 
+            // 出力
             MyFileUtil.fileOutput(formatList,
-                                  FileComparisonConst.OUTPUT_LIST_PATH,
+                                  FileSyncConst.OUTPUT_LIST_PATH,
                                   false,
                                   MyFileUtil.EncodeType.UTF8.getCharset(),
                                   MyFileUtil.LineFeedType.LF.getValue());
@@ -197,12 +208,14 @@ public class FileComparisonMain {
 
         // 差分ファイルの出力
         if (isOutputDiffFile) {
-            logger.info("◆差分ファイルの出力先　：" + FileComparisonConst.OUTPUT_FILE_DIR);
+            logger.info("◆差分ファイルの出力先　：" + FileSyncConst.OUTPUT_FILE_DIR);
             for (DiffBean diffBean : diffListBean.getDiffList()) {
                 if (CompareKbn.insert == diffBean.getCompareKbn() || CompareKbn.update == diffBean.getCompareKbn()) {
                     // 比較結果が登録・更新時のみファイルコピーを実施
                     Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
-                    Path copyTo = FileComparisonConst.OUTPUT_FILE_DIR.resolve(diffBean.getFilePath());
+                    Path copyTo = FileSyncConst.OUTPUT_FILE_DIR.resolve(diffBean.getFilePath());
+
+                    // 出力
                     MyFileUtil.fileCopy(copyFrom, copyTo);
                     logger.debug(copyFrom + " → " + copyTo);
                 }
@@ -217,6 +230,8 @@ public class FileComparisonMain {
                     // 比較結果が登録・更新時のみファイルコピーを実施
                     Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
                     Path copyTo = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
+
+                    // コピー
                     MyFileUtil.fileCopy(copyFrom, copyTo);
                     logger.debug(copyFrom + " → " + copyTo);
                 }

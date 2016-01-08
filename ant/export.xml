@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="FileComparison" default="export" basedir=".">
+<project name="FileSync" default="export" basedir=".">
 
 	<target name="export">
 

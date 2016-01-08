@@ -13,7 +13,7 @@
 	<!-- Appender -->
 	<appender name="file" class="org.apache.log4j.FileAppender">
 		<param name="Encoding" value="UTF-8" />
-		<param name="File" value="./log/FileComparison.log" />
+		<param name="File" value="./log/FileSync.log" />
 		<param name="Append" value="true" /> <!-- true:追記  false:上書き -->
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d{yyyy/MM/dd HH:mm:ss,SSS} %-5p (%C) %m%n" />

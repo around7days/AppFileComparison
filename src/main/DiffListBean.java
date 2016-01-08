@@ -3,12 +3,12 @@ package main;
 import java.util.ArrayList;
 import java.util.List;
 
-import main.FileComparisonConst.CompareKbn;
+import main.FileSyncConst.CompareKbn;
 
 import org.apache.log4j.Logger;
 
 /**
- * 比較結果格納Bean
+ * ファイル比較結果格納Bean
  * @author 7days
  */
 public class DiffListBean {

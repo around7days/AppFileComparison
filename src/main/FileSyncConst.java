@@ -6,10 +6,10 @@ import java.nio.file.Paths;
 import common.utils.MyDateUtil;
 
 /**
- * ファイル比較定義クラス
+ * ファイル同期化定義クラス
  * @author 7days
  */
-public class FileComparisonConst {
+public class FileSyncConst {
 
     /** 実行ディレクトリ */
     private static final Path RUN_DIR = Paths.get(System.getProperty("user.dir"));
@@ -17,7 +17,7 @@ public class FileComparisonConst {
     /** confディレクトリ */
     private static final Path CONF_DIR = RUN_DIR.resolve("conf");
     /** confファイル名 */
-    private static final String CONF_NM = "FileComparison.properties";
+    private static final String CONF_NM = "FileSync.properties";
     /** confパス */
     public static final Path CONF_PATH = CONF_DIR.resolve(CONF_NM);
 
@@ -33,6 +33,9 @@ public class FileComparisonConst {
 
     /** 差分リストフォーマット区切り文字 */
     public static final String SEPARATOR = "\t";
+
+    /** 構文タイプ */
+    public static final String SYNTAX_TYPE = "glob";
 
     /**
      * 比較結果タイプ

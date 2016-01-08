@@ -84,6 +84,8 @@ public class MyFileSearch {
         List<PathMatcher> includePathMatcherList = new ArrayList<>();
 
         for (String pattern : patterns) {
+            if (pattern == null || pattern.isEmpty()) continue;
+
             // 構文とパターンの生成(パスを/に変換)
             String syntaxAndPattern = syntax + ":" + (searchPath + "/" + pattern.trim()).replaceAll("\\\\", "/");
             // PathMatcherの生成
