@@ -7,6 +7,7 @@
 
 		<!-- 環境変数設定 -->
 		<property name="classes_dir" value="${basedir}/classes"/>
+		<property name="source_dir" value="${basedir}/src"/>
 		<property name="lib_dir" value="${basedir}/lib"/>
 		<property name="ant_dir" value="${basedir}/ant"/>
 		<property name="dest_dir" value="${basedir}/ant/dest"/>
@@ -18,7 +19,6 @@
 		<pathconvert targetos="unix" pathsep=" " property="lib_list" refid="lib_fileset" >
 	        <map from="${lib_dir}/" to="" />
 	    </pathconvert>
-		<echo message="library{lib_list}" />
 
 		<!-- 出力先ディレクトリを初期化 -->
 		<delete dir="${dest_dir}" />
@@ -35,6 +35,7 @@
 			<zipfileset src="${ant_dir}/jar-in-jar-loader.zip"/>
 			<zipfileset dir="${lib_dir}" includes="*.jar"/>
 			<fileset dir="${classes_dir}"/>
+			<fileset dir="${source_dir}" includes="**/*.java" />
 		</jar>
 
 		<!-- confコピー -->
