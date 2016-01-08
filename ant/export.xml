@@ -1,33 +1,48 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<project name="FileSync" default="export" basedir=".">
-
-	<target name="export">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" basedir="../" name="Create Runnable Jar ">
+	<!--this file was created by Eclipse Runnable JAR Export Wizard-->
+	<!--ANT 1.7 is required                                        -->
+	<target name="create_run_jar">
+		<echo message="basedir:${basedir}" />
 
 		<!-- 環境変数設定 -->
-		<property name="file_name" value="sync.jar"/>
-		<property name="dest_dir" value="./dest"/>
+		<property name="classes_dir" value="${basedir}/classes"/>
+		<property name="lib_dir" value="${basedir}/lib"/>
+		<property name="ant_dir" value="${basedir}/ant"/>
+		<property name="dest_dir" value="${basedir}/ant/dest"/>
+		<property name="jar_name" value="FileSync.jar"/>
+		<property name="exec_class" value="main.FileSyncMain"/>
 
-		<!-- 出力先ディレクトリを削除 -->
+		<!-- ライブラリ一覧の取得 -->
+		<fileset id="lib_fileset" dir="${lib_dir}" includes="*.jar" />
+		<pathconvert targetos="unix" pathsep=" " property="lib_list" refid="lib_fileset" >
+	        <map from="${lib_dir}/" to="" />
+	    </pathconvert>
+		<echo message="library{lib_list}" />
+
+		<!-- 出力先ディレクトリを初期化 -->
 		<delete dir="${dest_dir}" />
 		<mkdir dir="${dest_dir}" />
 
-		<!-- 出力先ディレクトリにzipファイル作成 -->
-		<zip destfile="${dest_dir}/${file_name}">
-			<fileset dir="../classes" />
-			<fileset dir=".." >
-				<include name="META-INF/**" />
-			</fileset>
-		</zip>
+		<!-- 実行可能jar生成 -->
+		<jar destfile="${dest_dir}/${jar_name}">
+			<manifest>
+				<attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
+				<attribute name="Rsrc-Main-Class" value="${exec_class}"/>
+				<attribute name="Class-Path" value="."/>
+				<attribute name="Rsrc-Class-Path" value="./ ${lib_list}"/>
+			</manifest>
+			<zipfileset src="${ant_dir}/jar-in-jar-loader.zip"/>
+			<zipfileset dir="${lib_dir}" includes="*.jar"/>
+			<fileset dir="${classes_dir}"/>
+		</jar>
 
-		<!-- 出力先ディレクトリにファイルをコピー -->
+		<!-- confコピー -->
 		<copy todir="${dest_dir}">
-			<fileset dir=".." >
+			<fileset dir="${basedir}" >
 				<include name="conf/**" />
-				<include name="lib/**" />
 			</fileset>
 		</copy>
 
 	</target>
-
 </project>
