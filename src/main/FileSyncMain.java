@@ -174,6 +174,7 @@ public class FileSyncMain {
      * 比較結果処理
      * @throws IOException
      */
+    @SuppressWarnings("incomplete-switch")
     private void procExecute() throws IOException {
 
         /*
@@ -183,7 +184,9 @@ public class FileSyncMain {
         boolean isOutputDiffFile = Boolean.valueOf(prop.getValue("outputDiffFile")); // 比較結果 差分ファイル出力
         boolean copyDiffFile = Boolean.valueOf(prop.getValue("copyDiffFile")); // 比較結果 差分ファイルコピー
 
-        // 差分リストの出力
+        /*
+         * 差分リストの出力
+         */
         if (isOutputDiffList) {
             logger.info("◆差分リストの出力先　　：" + FileSyncConst.OUTPUT_LIST_PATH);
 
@@ -201,39 +204,50 @@ public class FileSyncMain {
             // 出力
             MyFileUtil.fileOutput(formatList,
                                   FileSyncConst.OUTPUT_LIST_PATH,
-                                  false,
                                   MyFileUtil.EncodeType.UTF8.getCharset(),
                                   MyFileUtil.LineFeedType.LF.getValue());
         }
 
-        // 差分ファイルの出力
+        /*
+         * 差分ファイルの出力
+         */
         if (isOutputDiffFile) {
             logger.info("◆差分ファイルの出力先　：" + FileSyncConst.OUTPUT_FILE_DIR);
             for (DiffBean diffBean : diffListBean.getDiffList()) {
-                if (CompareKbn.insert == diffBean.getCompareKbn() || CompareKbn.update == diffBean.getCompareKbn()) {
-                    // 比較結果が登録・更新時のみファイルコピーを実施
+                switch (diffBean.getCompareKbn()) {
+                case insert:
+                case update:
+                    // 比較結果が登録・更新時のみファイル出力を実施
                     Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
                     Path copyTo = FileSyncConst.OUTPUT_FILE_DIR.resolve(diffBean.getFilePath());
-
-                    // 出力
                     MyFileUtil.fileCopy(copyFrom, copyTo);
-                    logger.debug(copyFrom + " → " + copyTo);
+                    logger.debug("output:" + copyTo);
+                    break;
                 }
             }
         }
 
-        // 差分ファイルのコピー
+        /*
+         * 差分ファイルのコピー
+         */
         if (copyDiffFile) {
             logger.info("◆差分ファイルのコピー先：" + diffListBean.getCompareDir2());
             for (DiffBean diffBean : diffListBean.getDiffList()) {
-                if (CompareKbn.insert == diffBean.getCompareKbn() || CompareKbn.update == diffBean.getCompareKbn()) {
-                    // 比較結果が登録・更新時のみファイルコピーを実施
+                switch (diffBean.getCompareKbn()) {
+                case insert:
+                case update:
+                    // 比較結果が登録・更新時はファイルコピーを実施
                     Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
                     Path copyTo = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
-
-                    // コピー
                     MyFileUtil.fileCopy(copyFrom, copyTo);
                     logger.debug(copyFrom + " → " + copyTo);
+                    break;
+                case delete:
+                    // 比較結果が削除時はファイル削除を実施
+                    Path path = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
+                    MyFileUtil.fileDelete(path);
+                    logger.debug("delete:" + path);
+                    break;
                 }
             }
         }

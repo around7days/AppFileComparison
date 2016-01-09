@@ -66,14 +66,12 @@ public class MyFileUtil {
      * ファイルの出力処理
      * @param list 出力内容
      * @param outputPath 出力先パス
-     * @param appendFlg 出力設定[true:追記 false:上書]
      * @param encode 文字コード
      * @param lineFeed 改行コード
      * @throws IOException
      */
     public static void fileOutput(List<?> list,
                                   Path outputPath,
-                                  boolean appendFlg,
                                   Charset encode,
                                   String lineFeed) throws IOException {
         // 出力先フォルダの生成
@@ -83,13 +81,6 @@ public class MyFileUtil {
         List<OpenOption> options = new ArrayList<OpenOption>();
         options.add(StandardOpenOption.CREATE);
         options.add(StandardOpenOption.WRITE);
-        if (appendFlg) {
-            // 追記
-            options.add(StandardOpenOption.APPEND);
-        } else {
-            // 上書き
-            options.add(StandardOpenOption.TRUNCATE_EXISTING);
-        }
 
         // 出力
         try (BufferedWriter bw = Files.newBufferedWriter(outputPath,
@@ -122,6 +113,21 @@ public class MyFileUtil {
             Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
         } catch (IOException e) {
             logger.warn("file copy error", e);
+            throw e;
+        }
+    }
+
+    /**
+     * ファイルの削除処理
+     * @param path ファイルパス
+     * @throws IOException
+     */
+    public static void fileDelete(Path path) throws IOException {
+        try {
+            // ファイル削除
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            logger.error("file delete error", e);
             throw e;
         }
     }
