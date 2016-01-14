@@ -87,7 +87,7 @@ public class MyFileSearch {
             if (pattern == null || pattern.isEmpty()) continue;
 
             // 構文とパターンの生成(パスを/に変換)
-            String syntaxAndPattern = syntax + ":" + (searchPath + "/" + pattern.trim()).replaceAll("\\\\", "/");
+            String syntaxAndPattern = syntax + ":" + pattern.trim().replaceAll("\\\\", "/");
             // PathMatcherの生成
             PathMatcher matcher = fs.getPathMatcher(syntaxAndPattern);
             // リストに格納

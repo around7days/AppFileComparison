@@ -167,7 +167,14 @@ public class FileSyncMain {
             }
         }
 
-        logger.info("◆比較結果" + System.lineSeparator() + diffListBean.toString());
+        /*
+         * 結果ログ出力
+         */
+        if (diffListBean.getDiffList().isEmpty()) {
+            logger.info("◆比較結果" + System.lineSeparator() + "差分なし");
+        } else {
+            logger.info("◆比較結果" + System.lineSeparator() + diffListBean.toString());
+        }
     }
 
     /**
@@ -178,17 +185,25 @@ public class FileSyncMain {
     private void procExecute() throws IOException {
 
         /*
+         * 差分有無判定
+         */
+        if (diffListBean.getDiffList().isEmpty()) {
+            // 差分なしの場合は処理終了
+            return;
+        }
+
+        /*
          * 設定ファイルから値を取得
          */
         boolean isOutputDiffList = Boolean.valueOf(prop.getValue("outputDiffList")); // 比較結果 差分リスト出力
         boolean isOutputDiffFile = Boolean.valueOf(prop.getValue("outputDiffFile")); // 比較結果 差分ファイル出力
-        boolean copyDiffFile = Boolean.valueOf(prop.getValue("copyDiffFile")); // 比較結果 差分ファイルコピー
+        boolean syncDiffFile = Boolean.valueOf(prop.getValue("syncDiffFile")); // 比較結果 差分ファイル同期化
 
         /*
          * 差分リストの出力
          */
         if (isOutputDiffList) {
-            logger.info("◆差分リストの出力先　　：" + FileSyncConst.OUTPUT_LIST_PATH);
+            logger.info("◆差分リストの出力先　：" + FileSyncConst.OUTPUT_LIST_PATH);
 
             // 出力用フォーマットの作成
             List<String> formatList = new ArrayList<>();
@@ -212,7 +227,7 @@ public class FileSyncMain {
          * 差分ファイルの出力
          */
         if (isOutputDiffFile) {
-            logger.info("◆差分ファイルの出力先　：" + FileSyncConst.OUTPUT_FILE_DIR);
+            logger.info("◆差分ファイルの出力先：" + FileSyncConst.OUTPUT_FILE_DIR);
             for (DiffBean diffBean : diffListBean.getDiffList()) {
                 switch (diffBean.getCompareKbn()) {
                 case insert:
@@ -228,10 +243,10 @@ public class FileSyncMain {
         }
 
         /*
-         * 差分ファイルのコピー
+         * 差分ファイルの同期化
          */
-        if (copyDiffFile) {
-            logger.info("◆差分ファイルのコピー先：" + diffListBean.getCompareDir2());
+        if (syncDiffFile) {
+            logger.info("◆差分ファイルの同期先：" + diffListBean.getCompareDir2());
             for (DiffBean diffBean : diffListBean.getDiffList()) {
                 switch (diffBean.getCompareKbn()) {
                 case insert:
@@ -240,7 +255,7 @@ public class FileSyncMain {
                     Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
                     Path copyTo = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
                     MyFileUtil.fileCopy(copyFrom, copyTo);
-                    logger.debug(copyFrom + " → " + copyTo);
+                    logger.debug("copy:" + copyFrom + " → " + copyTo);
                     break;
                 case delete:
                     // 比較結果が削除時はファイル削除を実施
