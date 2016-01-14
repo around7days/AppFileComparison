@@ -80,7 +80,8 @@ public class FileSyncMain {
         Logger rootLogger = LogManager.getRootLogger();
         rootLogger.setLevel(Level.toLevel(logLevel));
 
-        logger.info("◆設定一覧" + System.lineSeparator() + prop.toString());
+        logger.info("◆設定一覧");
+        prop.debug(Level.INFO);
     }
 
     /**
@@ -170,10 +171,11 @@ public class FileSyncMain {
         /*
          * 結果ログ出力
          */
+        logger.info("◆比較結果");
         if (diffListBean.getDiffList().isEmpty()) {
-            logger.info("◆比較結果" + System.lineSeparator() + "差分なし");
+            logger.info("差分なし");
         } else {
-            logger.info("◆比較結果" + System.lineSeparator() + diffListBean.toString());
+            diffListBean.debug(Level.INFO);
         }
     }
 

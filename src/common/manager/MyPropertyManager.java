@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -45,15 +46,14 @@ public enum MyPropertyManager {
         return prop.getProperty(key);
     }
 
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        prop.stringPropertyNames().forEach(key -> {
-            sb.append(String.format("%-25s", key))
-              .append(" : ")
-              .append(prop.getProperty(key))
-              .append(System.lineSeparator());
+    /**
+     * デバッグログ出力
+     * @param level
+     */
+    public void debug(Level level) {
+        prop.stringPropertyNames().stream().sorted().forEach(key -> {
+            String val = String.format("%-25s", key) + " : " + prop.getProperty(key);
+            logger.log(level, val);
         });
-        return sb.toString();
     }
-
 }

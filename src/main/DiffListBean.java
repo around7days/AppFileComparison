@@ -5,6 +5,7 @@ import java.util.List;
 
 import main.FileSyncConst.CompareKbn;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -14,7 +15,6 @@ import org.apache.log4j.Logger;
 public class DiffListBean {
 
     /** Logger */
-    @SuppressWarnings("unused")
     private static final Logger logger = Logger.getLogger(DiffListBean.class);
 
     /** 比較元ディレクトリ */
@@ -78,15 +78,15 @@ public class DiffListBean {
         return diffList;
     }
 
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
+    /**
+     * デバッグログ出力
+     * @param level
+     */
+    public void debug(Level level) {
         diffList.forEach(diffBean -> {
-            sb.append(diffBean.getCompareKbn().value())
-              .append(",")
-              .append(diffBean.getFilePath())
-              .append(System.lineSeparator());
+            String val = diffBean.getCompareKbn().value() + ":" + diffBean.getFilePath();
+            logger.log(level, val);
         });
-        return sb.toString();
     }
 }
 
