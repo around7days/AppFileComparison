@@ -172,7 +172,7 @@ public class FileSyncMain {
          * 結果ログ出力
          */
         logger.info("◆比較結果");
-        if (diffListBean.getDiffList().isEmpty()) {
+        if (!diffListBean.getDiffList().isEmpty()) {
             logger.info("差分あり");
             diffListBean.getDiffList().forEach(bean -> logger.debug(bean));
         } else {

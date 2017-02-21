@@ -14,6 +14,7 @@ import main.FileSyncConst.CompareKbn;
 public class DiffListBean {
 
     /** Logger */
+    @SuppressWarnings("unused")
     private static final Logger logger = Logger.getLogger(DiffListBean.class);
 
     /** 比較元ディレクトリ */
