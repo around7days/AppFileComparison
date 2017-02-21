@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-import main.FileSyncConst.CompareKbn;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -17,6 +15,7 @@ import common.manager.MyPropertyManager;
 import common.utils.MyArrayUtil;
 import common.utils.MyFileSearch;
 import common.utils.MyFileUtil;
+import main.FileSyncConst.CompareKbn;
 
 /**
  * ファイル同期化メインクラス
@@ -132,6 +131,7 @@ public class FileSyncMain {
         logger.info("◆ファイル比較");
         // 新規・更新リストの取得
         for (String file1 : fileList1) {
+            logger.debug(file1);
             if (!fileList2.contains(file1)) {
                 // 比較先に同名ファイルが存在しない場合
                 // 新規リストに格納
@@ -173,9 +173,10 @@ public class FileSyncMain {
          */
         logger.info("◆比較結果");
         if (diffListBean.getDiffList().isEmpty()) {
-            logger.info("差分なし");
+            logger.info("差分あり");
+            diffListBean.getDiffList().forEach(bean -> logger.debug(bean));
         } else {
-            diffListBean.debug(Level.INFO);
+            logger.info("差分なし");
         }
     }
 

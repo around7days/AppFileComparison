@@ -3,10 +3,9 @@ package main;
 import java.util.ArrayList;
 import java.util.List;
 
-import main.FileSyncConst.CompareKbn;
-
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import main.FileSyncConst.CompareKbn;
 
 /**
  * ファイル比較結果格納Bean
@@ -77,17 +76,6 @@ public class DiffListBean {
     public List<DiffBean> getDiffList() {
         return diffList;
     }
-
-    /**
-     * デバッグログ出力
-     * @param level
-     */
-    public void debug(Level level) {
-        diffList.forEach(diffBean -> {
-            String val = diffBean.getCompareKbn().value() + ":" + diffBean.getFilePath();
-            logger.log(level, val);
-        });
-    }
 }
 
 class DiffBean {
@@ -128,6 +116,12 @@ class DiffBean {
      */
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    @Override
+    public String toString() {
+        String val = this.getCompareKbn().value() + ":" + this.getFilePath();
+        return val;
     }
 
 }
