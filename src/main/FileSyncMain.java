@@ -1,11 +1,16 @@
 package main;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -13,8 +18,8 @@ import org.apache.log4j.Logger;
 
 import common.manager.MyPropertyManager;
 import common.utils.MyArrayUtil;
-import common.utils.MyFileSearch;
 import common.utils.MyFileUtil;
+import common.utils.MyStringUtil;
 import main.FileSyncConst.CompareKbn;
 
 /**
@@ -29,8 +34,8 @@ public class FileSyncMain {
     /** PropertyManager */
     private static final MyPropertyManager prop = MyPropertyManager.INSTANCE;
 
-    /** 比較結果格納Bean */
-    private DiffListBean diffListBean = new DiffListBean();
+    /** FileSystem */
+    private static final FileSystem fs = FileSystems.getDefault();
 
     /**
      * 実行処理
@@ -59,10 +64,10 @@ public class FileSyncMain {
         procInit();
 
         // 比較処理
-        procCompare();
+        DiffListBean diffListBean = procCompare();
 
         // 比較結果処理
-        procExecute();
+        procExecute(diffListBean);
     }
 
     /**
@@ -75,9 +80,11 @@ public class FileSyncMain {
         prop.setProperty(FileSyncConst.CONF_PATH.toString());
 
         // ログレベルの設定
+        logger.info("◆ログレベル設定");
         String logLevel = prop.getValue("logLevel");
         Logger rootLogger = LogManager.getRootLogger();
         rootLogger.setLevel(Level.toLevel(logLevel));
+        logger.info(logLevel);
 
         logger.info("◆設定一覧");
         prop.debug(Level.INFO);
@@ -87,7 +94,12 @@ public class FileSyncMain {
      * 比較
      * @throws IOException
      */
-    private void procCompare() throws IOException {
+    private DiffListBean procCompare() throws IOException {
+
+        /*
+         * ファイル比較結果格納Beanの生成
+         */
+        DiffListBean diffListBean = new DiffListBean();
 
         /*
          * 設定ファイルから値を取得
@@ -104,39 +116,36 @@ public class FileSyncMain {
         boolean hashCheck = Boolean.valueOf(prop.getValue("hashCheck")); // チェックサム
 
         // 保存
-        diffListBean.setCompareDir1(compareDir1.toString());
-        diffListBean.setCompareDir2(compareDir2.toString());
+        diffListBean.setCompareDir1(compareDir1);
+        diffListBean.setCompareDir2(compareDir2);
 
         /*
          * ファイル探索
          */
-        // ファイル探索クラスの生成
-        MyFileSearch fileSearch = new MyFileSearch();
+        // 比較対象PathMatcher・除外対象PathMatcherの生成
+        logger.debug("▲inculdePattern");
+        List<PathMatcher> includeMatcherList = createPathMatcher(FileSyncConst.SYNTAX_TYPE, includePatterns);
+        logger.debug("▲excludePattern");
+        List<PathMatcher> excludeMatcherList = createPathMatcher(FileSyncConst.SYNTAX_TYPE, excludePatterns);
 
         // ディレクトリ1、ディレクトリ2のファイルリストの取得（相対パス）
         logger.info("◆ファイル探索（比較元）");
-        List<String> fileList1 = fileSearch.search(compareDir1,
-                                                   FileSyncConst.SYNTAX_TYPE,
-                                                   includePatterns,
-                                                   excludePatterns);
+        List<Path> fileList1 = fileSearch(compareDir1, includeMatcherList, excludeMatcherList);
         logger.info("◆ファイル探索（比較先）");
-        List<String> fileList2 = fileSearch.search(compareDir2,
-                                                   FileSyncConst.SYNTAX_TYPE,
-                                                   includePatterns,
-                                                   excludePatterns);
+        List<Path> fileList2 = fileSearch(compareDir2, includeMatcherList, excludeMatcherList);
 
         /*
          * ファイル比較
          */
         logger.info("◆ファイル比較");
+
         // 新規・更新リストの取得
-        for (String file1 : fileList1) {
-            logger.debug(file1);
+        fileList1.forEach(file1 -> {
             if (!fileList2.contains(file1)) {
                 // 比較先に同名ファイルが存在しない場合
                 // 新規リストに格納
                 diffListBean.addList(CompareKbn.insert, file1);
-                continue;
+                return;
             } else {
                 // 比較先に同名ファイルが存在する場合
 
@@ -147,26 +156,25 @@ public class FileSyncMain {
                 if (lastModifiedTimeCheck && !MyFileUtil.equalsLastModifiedTime(filePath1, filePath2)) {
                     // 異なる場合は更新リストに格納
                     diffListBean.addList(CompareKbn.update, file1);
-                    continue;
+                    return;
                 }
 
                 // チェックサムの比較
                 if (hashCheck && !MyFileUtil.equalsChecksum(filePath1, filePath2)) {
                     // 異なる場合は更新リストに格納
                     diffListBean.addList(CompareKbn.update, file1);
-                    continue;
+                    return;
                 }
             }
-        }
+        });
 
         // 削除リストの取得
-        for (String file2 : fileList2) {
-            if (!fileList1.contains(file2)) {
-                // 比較元に同名ファイルが存在しない場合
-                // 削除リストに格納
-                diffListBean.addList(CompareKbn.delete, file2);
-            }
-        }
+        fileList2.stream()
+                 .filter(file2 -> !fileList1.contains(file2)) // 比較元に同名ファイルが存在しない
+                 .forEach(file2 -> {
+                     // 削除リストに格納
+                     diffListBean.addList(CompareKbn.delete, file2);
+                 });
 
         /*
          * 結果ログ出力
@@ -174,18 +182,21 @@ public class FileSyncMain {
         logger.info("◆比較結果");
         if (!diffListBean.getDiffList().isEmpty()) {
             logger.info("差分あり");
-            diffListBean.getDiffList().forEach(bean -> logger.debug(bean));
+            diffListBean.getDiffList().forEach(logger::debug);
         } else {
             logger.info("差分なし");
         }
+
+        return diffListBean;
     }
 
     /**
      * 比較結果処理
+     * @param diffListBean ファイル比較結果格納Bean
      * @throws IOException
      */
     @SuppressWarnings("incomplete-switch")
-    private void procExecute() throws IOException {
+    private void procExecute(DiffListBean diffListBean) throws IOException {
 
         /*
          * 差分有無判定
@@ -209,15 +220,14 @@ public class FileSyncMain {
             logger.info("◆差分リストの出力先　：" + FileSyncConst.OUTPUT_LIST_PATH);
 
             // 出力用フォーマットの作成
-            List<String> formatList = new ArrayList<>();
-            for (DiffBean diffBean : diffListBean.getDiffList()) {
+            List<String> formatList = diffListBean.getDiffList().stream().map(diffBean -> {
                 StringJoiner sj = new StringJoiner(FileSyncConst.SEPARATOR); // 区切り文字の指定
                 sj.add(diffBean.getCompareKbn().value()); // 比較結果区分
-                sj.add(diffBean.getFilePath());// 相対パス
-                sj.add(Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath()).toString()); // 比較元絶対パス
-                sj.add(Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath()).toString()); // 比較先絶対パス
-                formatList.add(sj.toString());
-            }
+                sj.add(diffBean.getFilePath().toString());// 相対パス
+                sj.add(diffListBean.getCompareDir1().resolve(diffBean.getFilePath()).toString()); // 比較元絶対パス
+                sj.add(diffListBean.getCompareDir2().resolve(diffBean.getFilePath()).toString()); // 比較先絶対パス
+                return sj.toString();
+            }).collect(Collectors.toList());
 
             // 出力
             MyFileUtil.fileOutput(formatList,
@@ -232,14 +242,15 @@ public class FileSyncMain {
         if (isOutputDiffFile) {
             logger.info("◆差分ファイルの出力先：" + FileSyncConst.OUTPUT_FILE_DIR);
             for (DiffBean diffBean : diffListBean.getDiffList()) {
+
                 switch (diffBean.getCompareKbn()) {
                 case insert:
                 case update:
                     // 比較結果が登録・更新時のみファイル出力を実施
-                    Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
+                    Path copyFrom = diffListBean.getCompareDir1().resolve(diffBean.getFilePath());
                     Path copyTo = FileSyncConst.OUTPUT_FILE_DIR.resolve(diffBean.getFilePath());
                     MyFileUtil.fileCopy(copyFrom, copyTo);
-                    logger.debug("output:" + copyTo);
+                    logger.debug("output : " + copyTo);
                     break;
                 }
             }
@@ -255,20 +266,84 @@ public class FileSyncMain {
                 case insert:
                 case update:
                     // 比較結果が登録・更新時はファイルコピーを実施
-                    Path copyFrom = Paths.get(diffListBean.getCompareDir1(), diffBean.getFilePath());
-                    Path copyTo = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
+                    Path copyFrom = diffListBean.getCompareDir1().resolve(diffBean.getFilePath());
+                    Path copyTo = diffListBean.getCompareDir2().resolve(diffBean.getFilePath());
                     MyFileUtil.fileCopy(copyFrom, copyTo);
-                    logger.debug("copy:" + copyFrom + " → " + copyTo);
+                    logger.debug("copy : " + copyFrom + " → " + copyTo);
                     break;
                 case delete:
                     // 比較結果が削除時はファイル削除を実施
-                    Path path = Paths.get(diffListBean.getCompareDir2(), diffBean.getFilePath());
+                    Path path = diffListBean.getCompareDir2().resolve(diffBean.getFilePath());
                     MyFileUtil.fileDelete(path);
-                    logger.debug("delete:" + path);
+                    logger.debug("delete : " + path);
                     break;
                 }
             }
         }
+    }
 
+    /**
+     * ファイル探索
+     * @param searchPath 探索ディレクトリパス
+     * @param includeMatcherList 比較対象パターンリスト
+     * @param excludeMatcherList 除外対象パターンリスト
+     * @return 結果リスト
+     * @throws IOException
+     */
+    private List<Path> fileSearch(Path searchPath,
+                                  List<PathMatcher> includeMatcherList,
+                                  List<PathMatcher> excludeMatcherList) throws IOException {
+        // 検索結果の格納List
+        List<Path> resultList;
+
+        // 検索処理
+        logger.debug("▲fileWalk");
+        try (Stream<Path> fileTreeStream = Files.walk(searchPath)) {
+            resultList = fileTreeStream.filter(p -> p.toFile().isFile()) // ファイルのみ対象
+                                       .filter(p -> matchPath(p, includeMatcherList, "includeMatch")) // 比較対象に含まれるか
+                                       .filter(p -> !matchPath(p, excludeMatcherList, "excludeMatch")) // 除外対象に含まれないか
+                                       .map(searchPath::relativize) // 相対パスに変換
+                                       .collect(Collectors.toList());
+        } catch (IOException e) {
+            logger.error("file search error");
+            throw e;
+        }
+
+        // 結果出力（デバッグ）
+        logger.debug("▲matchList");
+        resultList.forEach(logger::debug);
+
+        return resultList;
+    }
+
+    /**
+     * PathMatcherリストの生成
+     * @param syntax
+     * @param patterns
+     * @return PathMatcherリスト
+     */
+    private List<PathMatcher> createPathMatcher(String syntax,
+                                                String[] patterns) {
+        return Stream.of(patterns)
+                     .filter(MyStringUtil::isNotEmpty) // 空文字を除外
+                     .map(p -> syntax + ":" + p.trim().replaceAll("\\\\", "/")) // 構文とパターンの生成(パスを/に変換)
+                     .peek(logger::debug) // 構文とパターンのログ出力 // TODO ログが出ない・・・
+                     .map(fs::getPathMatcher) // PathMatcherの生成
+                     .collect(Collectors.toList()); // Listに格納
+    }
+
+    /**
+     * 指定されたパスがパターンリストに一致するかチェック
+     * @param p 比較対象パス
+     * @param pathMatcherStream
+     * @return 結果[true:一致 false:不一致]
+     */
+    private boolean matchPath(Path p,
+                              List<PathMatcher> pathMatcherStream,
+                              String debugMsg) {
+        boolean b = pathMatcherStream.stream().anyMatch(m -> m.matches(p));
+        if (b) logger.debug(debugMsg + " : " + p.toString());
+
+        return b;
     }
 }
